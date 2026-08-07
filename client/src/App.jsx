@@ -1,9 +1,11 @@
 /*
-Questo è il contenitore principale dell' applicazione.
+Questo e il contenitore principale dell' applicazione.
 */
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AuthPage from "./pages/AuthPage";
 import DashboardPage from "./pages/DashboardPage";
+import ProfilePage from "./pages/ProfilePage";
+import AnalysisPage from "./pages/AnalysisPage";
 
 function App() {
     return (
@@ -11,6 +13,8 @@ function App() {
             <Routes>
                 <Route path="/" element={<AuthPage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/analysis" element={<AnalysisPage />} />
             </Routes>
         </BrowserRouter>
     );

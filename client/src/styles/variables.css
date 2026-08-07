@@ -1,0 +1,14 @@
+﻿:root {
+    /*VARIABILI*/
+    --title-color: #6e9be6;
+    --title-grey-color: #2f3a35;
+    --subtitle-color: #5f7168;
+    --border: 1px solid rgba(123, 146, 135, 0.16);
+    --platform-primary-background: linear-gradient(135deg, #6e9be6, #72c7a3);
+    --platform-secondary-background: linear-gradient(135deg, #dd8f62, #d36f6f);
+    --platform-ghost-background: rgba(123, 146, 135, 0.18);
+    --topbar-background: rgba(247, 249, 244, 0.96);
+    --box-shadow-color: rgba(88, 103, 93, 0.15);
+    --focus-box-shadow: 0 0 0 4px rgba(124, 170, 226, 0.16);
+    --focus-border-color: rgba(109, 153, 210, 0.55);
+}

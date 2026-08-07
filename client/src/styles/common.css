@@ -1,0 +1,138 @@
+@import "./variables.css";
+
+/* Reset globale: rimuove margini/padding di default e usa border-box */
+/* questo mi obbliga a dover poi settare tutti gli spazi a mano in ogni elemento */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    font-family: Inter, system-ui, Arial, sans-serif; /*varie opzioni di font nel caso non sia presente quello selezionato*/
+    color: #4f6058;
+}
+
+/* Crea lo sfondo principale */
+body {
+    min-height: 100vh;
+    background: radial-gradient(circle at top left, rgba(120, 156, 214, 0.20), transparent 28%), radial-gradient(circle at bottom right, rgba(155, 207, 182, 0.22), transparent 26%), linear-gradient(135deg, #eef2ea 0%, #e7ece5 45%, #dde6df 100%);
+}
+
+/* Fa ereditare il font globale a bottoni e input */
+button,
+input,
+textarea,
+select {
+    font: inherit;
+}
+
+/* Badge con nome brand */
+.brand-tag {
+    display: inline-block; /* questo mi serve per vederlo inine + mettere margin*/
+    width: fit-content;
+    padding: 10px 15px; /*alto/basso + dx/sx*/
+    border-radius: 100px;
+    color: #ffffff;
+    background: var(--platform-primary-background);
+    font-size: 1.1rem;
+    font-weight: 700;
+    border: var(--border);
+}
+
+/* layout del form gebnerale, come sono disposti i campi input uno sopra l'altro*/
+.habit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+/* Riga a due colonne*/
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+/* label + input  -> qui non faccio inherit come prima perchè anche se cambiassi la direction del flex a mio piacree 
+    volgio comunque che la label sia sopra all'input
+*/
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+    .input-group label {
+        font-size: 0.95rem;
+        font-weight: 500;
+    }
+
+    .input-group input,
+    .input-group textarea,
+    .input-group select {
+        width: 100%;
+        padding: 10px 10px;
+        border-radius: 15px;
+        border: var(--border);
+        outline: none; /* rimuovo la outline nera di default*/
+        transition: 0.25s ease;
+        background: rgba(255, 255, 255, 0.60);
+    }
+
+    .input-group textarea {
+        min-height: 110px;
+        resize: vertical;
+    }
+
+    .input-group ::placeholder {
+        color: #8b9a92;
+    }
+
+    /* Effetto quando l'input è attivo, mi serve per indicare a primo colpo dove sto scrivendo */
+    .input-group input:focus,
+    .input-group textarea:focus,
+    .input-group select:focus {
+        border-color: rgba(109, 153, 210, 0.55);
+        box-shadow: 0 0 0 4px rgba(124, 170, 226, 0.16);
+        transform: translateY(-1px);
+    }
+
+/* classe btn comune, cose che hanno i vari bottoni in comune */
+.btn {
+    border: none;
+    border-radius: 16px;
+    padding: 15px 15px;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    color: #ffffff;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+    .btn :hover {
+        transform: translateY(-2px);
+    }
+
+/* bottoni con colori piattaforma (gradiente blu verdino acquea )*/
+.primary-btn {
+    background: var(--platform-primary-background);
+    box-shadow: 0 10px 25px rgba(106, 146, 205, 0.22); /* 0 a dx 10px sotto blur 25px*/
+}
+    .primary-btn:hover {
+        
+        box-shadow: 0 20px 35px rgba(106, 146, 205, 0.28);
+    }
+
+/* bottone per azioni secondarie, come stop dell'attività */
+.secondary-btn {
+    background: var(--platform-secondary-background);
+    box-shadow: 0 10px 22px rgba(211, 111, 111, 0.18);
+}
+    .secondary-btn:hover {
+        box-shadow: 0 16px 28px rgba(211, 111, 111, 0.24);
+    }
+
+/* bottone ghost usato per azioni semplici e molto secondarie tipl Edit/Done */
+.ghost-btn {
+    background: var(--platform-ghost-background);
+    color: inherit;
+}

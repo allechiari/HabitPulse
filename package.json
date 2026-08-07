@@ -1,0 +1,29 @@
+{
+  "name": "habit",
+  "version": "1.0.0",
+  "description": "HabitPulse is a full-stack web application for tracking and managing daily habits.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm run dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/allechiari/HabitPulse.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/allechiari/HabitPulse/issues"
+  },
+  "homepage": "https://github.com/allechiari/HabitPulse#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

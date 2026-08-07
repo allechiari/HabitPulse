@@ -1,0 +1,166 @@
+
+/* questo è l'intero blocco (dx e sx ) della auth page, lo centro */
+.auth-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Contenitore grid con due colonne (presentazione e log/reg)*/
+.auth-shell {
+    width: 100%;
+    max-width: 1180px;
+    min-height: 720px;
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr; /*dimensione delle due colonne*/
+    background: rgba(247, 249, 244, 0.86);
+    border: var(--border);
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: 0 22px 60px rgba(88, 103, 93, 0.14);
+}
+
+/* Colonna sinistra, presentazione e sfondi, purametne visuale */
+.auth-visual {
+    position: relative; /*se non lo metto i cerchi esconlo dalla colonna */
+    padding: 50px;
+    display: flex;
+    align-items: flex-end;
+    background: linear-gradient(180deg, rgba(133, 165, 219, 0.18), rgba(147, 201, 173, 0.18)); /*alto -> bass*/
+}
+    /*questi sono due elementi che conterran i due cerchi solo a scopo decorativo*/
+    .auth-visual::before,
+    .auth-visual::after {
+        content: ""; /* serve per far esistere gli elementi*/
+        position: absolute;
+        border-radius: 50%;
+    }
+
+    /* Cerchio in alto a destra */
+    .auth-visual::before {
+        width: 220px;
+        height: 220px;
+        top: 50px;
+        right: 60px;
+        background: rgba(122, 163, 222, 0.26);
+        filter: blur(18px);
+    }
+
+    /* Cerchio in basso a sinistra */
+    .auth-visual::after {
+        width: 160px;
+        height: 160px;
+        bottom: 80px;
+        left: 40px;
+        background: rgba(136, 197, 174, 0.24);
+        filter: blur(12px);
+    }
+
+/* dico che le scritte devono stare sopras a tutto */
+.auth-visual-content {
+    z-index: 1;
+}
+/* Testo presentazione */
+.auth-visual h1 {
+    font-size: 3rem;
+    line-height: 1.05;
+    margin-bottom: 15px;
+    margin-top: 15px;
+    color: var(--title-color);
+}
+.auth-visual p {
+    color: var(--subtitle-color);
+    font-size: 1.05rem;
+    line-height: 1;
+}
+
+/* pannelo di auth con log/reg form */
+.auth-panel {
+    padding: 30px 30px;
+    display: flex;
+    flex-direction: column; /* gli elementi saranno incolonnati*/
+    justify-content: center;
+}
+.auth-panel-header h2 {
+    font-size: 2rem;
+    margin-bottom: 5px;
+    color: var(--title-color);
+}
+.auth-panel-header p {
+    color: var(--subtitle-color);
+    margin-bottom: 25px;
+    line-height: 1.5;
+}
+
+/* Box che mostra le regole della password */
+.password-rules {
+    padding: 15px 10px;
+    border-radius: 18px;
+    border: var(--border);
+    background: rgba(255, 255, 255, 0.60);
+}
+    .password-rules p {
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+        font-weight: 500;
+    }
+    .password-rules ul {
+        list-style: none;
+        display: grid;
+        gap: 5px;
+    }
+    .password-rules li {
+        color: #7b8b84;
+        font-size: 0.92rem;
+        transition: color 0.2s ease;
+    }
+        .password-rules li.valid {
+            color: #3fa46e;
+            font-weight: 600;
+        }
+
+/* Bottone-link testuale per cambiare modalità tra reg e log */
+.link-btn {
+    margin-left: 8px;
+    background: transparent;
+    border: none;
+    color: #5e8fcf;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+/* Stile comune dei banner messaggio */
+.banner {
+    padding: 10px 10px;
+    border-radius: 14px;
+    font-size: 0.9rem;
+    line-height: 1;
+}
+.banner-success {
+    background: rgba(87, 181, 121, 0.14);
+    color: #2f7f50;
+    border: 1px solid rgba(87, 181, 121, 0.22);
+    margin-bottom: 15px;
+}
+.banner-error {
+    background: rgba(215, 112, 112, 0.14);
+    color: #a54e4e;
+    border: 1px solid rgba(215, 112, 112, 0.22);
+}
+
+/* Adattamenti responsive */
+@media (max-width: 980px) {
+    .auth-shell {
+        grid-template-columns: 1fr;
+    }
+
+    .auth-visual {
+        min-height: 260px;
+        align-items: center;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}

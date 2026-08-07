@@ -1,0 +1,559 @@
+﻿
+/* contenitore della dashboard, metto il padding e divido i suoi elementi in colonna (topbar e grid attivita)*/
+.dashboard-page {
+    min-height: 100vh;
+    width: 100%;
+    padding: 25px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.dashboard-topbar {
+    width: 100%;
+    display: flex;
+    gap: 20px;
+    padding: 20px 20px;
+    border-radius: 26px;
+    background: var(--topbar-background);
+    box-shadow: 0 20px 30px var(--box-shadow-color);
+    align-items: center;
+    position: relative; /* importtante, mi serve per far centrare il tiolo ignorando gli altri elementi*/
+}
+/* contiene il titolo */
+.dashboard-topbar-title {
+    margin: auto;
+    background: var(--platform-primary-background);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+/* contiene le varie azioni: switch, add attivita e profilo */
+.dashboard-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+
+/* blocco di css per fare la checkbox con i colori piattaforma e in stile switch*/
+.toggle-switch {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+    /* devo nascondere la checkbox originale brutta */
+    .toggle-switch input {
+        display: none;
+    }
+        /* switch attivo (checkbox selezionata modifico lo slider che viene dopo) */
+        .toggle-switch input:checked + .slider {
+            background: var(--platform-primary-background);
+        }
+            /* per far muover il pallino quando attivo */
+            .toggle-switch input:checked + .slider::before {
+                transform: translateX(22px);
+            }
+    .toggle-switch:hover .slider {
+        background: rgba(126, 145, 134, 0.32);
+    }
+/* base dello switch  grigia dove dentro si muove il pallino*/
+.slider {
+    position: relative;
+    width: 46px;
+    height: 24px;
+    border-radius: 99px;
+    background: var(--platform-ghost-background);
+    transition: transform 0.3s ease;
+}
+    /* Pallino che si muove nello switch */
+    .slider::before {
+        content: "";
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        left: 3px;
+        top: 3px;
+        border-radius: 50%;
+        background: #ffffff;
+        transition: transform 0.3s ease;
+    }
+/* testo switch */
+.toggle-label {
+    font-weight: 500;
+}
+
+
+/* pulsante del profilo */
+.profile-avatar-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 99px;
+    border: var(--border);
+    background: var(--platform-primary-background);
+    color: #ffffff;
+    font-weight: 700;
+    cursor: pointer;
+}
+/* Dropdown del menu profilo che appare sotto il pulsante avatar */
+.profile-dropdown {
+    position: absolute;
+    top: 70px;
+    right: 0;
+    width: 210px;
+    padding: 8px;
+    border-radius: 20px;
+    background: var(--topbar-background);
+    border: var(--border);
+    z-index: 99;
+}
+
+/* bootni interni del dropdown */
+.profile-dropdown-item {
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: transparent;
+    border-radius: 12px;
+    padding: 12px 12px;
+    cursor: pointer;
+}
+    .profile-dropdown-item:hover {
+        background: rgba(126, 145, 134, 0.10);
+    }
+.logout-item {
+    color: #b45c5c;
+}
+
+/* grid dove compaione le card delle attività, in colonne una di fianco dall'altra */
+.activities-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 320px);
+    gap: 20px;
+}
+
+/* card singola per ogni att */
+.activity-card {
+    width: 320px;
+    height: 400px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 20px;
+    border-radius: 24px;
+    background: var(--topbar-background);
+    border: var(--border);
+    box-shadow: 0 18px 40px var(--box-shadow-color);
+    transition: transform 0.2s ease;
+}
+    .activity-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 24px 48px rgba(88, 103, 93, 0.20);
+    }
+    .activity-card.dragging {
+        opacity: 0.5;
+    }
+    .activity-card.drop-target {
+        border-color: rgba(110, 155, 230, 0.5);
+        box-shadow: 0 0 0 2px rgba(110, 155, 230, 0.2);
+    }
+
+/* card di attività stoppata */
+.stopped-card {
+    opacity: 0.8;
+    background: rgba(236, 240, 234, 0.90);
+}
+
+/* header card, blocco con titolo desc badge e drag and drop*/
+.activity-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 5px;
+}
+.activity-card-header-left {
+    display: inherit;
+    align-items: inherit;
+    gap: 10px;
+}
+
+/* Pulsante della handle drag, usato per il trascinamento */
+.drag-handle-btn {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border: var(--border);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.50);
+    /* questo blocco mi serve per allineare al centro l'icon*/
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: grab;
+    transition: transform 0.2s ease;
+}
+    .drag-handle-btn:hover {
+        transform: translateY(-2px);
+    }
+    .drag-handle-btn:active {
+        cursor: grabbing;
+    }
+
+/* icona drag*/
+.drag-cross-icon {
+    color: var(--subtitle-color);
+    line-height: 1;
+}
+
+/* Blocco che contiene titolo e descrizione dellattività*/
+.activity-card-title-block {
+    line-height: 1.5;
+    word-break: break-word;
+}
+    .activity-card-title-block h3 {
+        margin-bottom: 5px;
+        font-size: 1.2rem;
+        color: var(--title-grey-color);
+        /* blocco per tagliare la frase o parola che va a capo*/
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+    }
+    .activity-card-title-block p {
+        color: var(--subtitle-color);
+        min-height: calc(2.8rem);
+        line-height: 1.5;
+
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+        
+/* Badge habit/vice */
+.activity-type {
+    padding: 9px 15px;
+    border-radius: 99px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: capitalize;
+}
+    .activity-type.habit {
+        background: rgba(114, 199, 163, 0.18);
+        color: #39785d;
+    }
+    .activity-type.vice {
+        background: rgba(240, 184, 118, 0.18);
+        color: #a06a2a;
+    }
+
+/* metadati: data e unit */
+.activity-card-meta {
+    display: flex;
+    gap: 15px;
+    font-size: 0.90rem;
+}
+
+/* blocco progress percentuale e badge*/
+.progress-visual-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 5px;
+    font-weight: 700;
+}
+/* percentuale sopra alla barra */
+.progress-percentage-label {
+    font-size: 0.9rem;
+}
+
+/* barra percentuale base e colore */
+.progress-bar-track {
+    width: 100%;
+    height: 10px;
+    border-radius: 99px;
+    background: var(--platform-ghost-background);
+}
+.progress-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 0.25s ease;
+}
+    .progress-bar-fill.good {
+        background: linear-gradient(135deg, #57b579, #7cd89a);
+    }
+    .progress-bar-fill.warning {
+        background: linear-gradient(135deg, #e7b24f, #f0cb72);
+    }
+    .progress-bar-fill.danger {
+        background: linear-gradient(135deg, #db7676, #f29a9a);
+    }
+
+/* badge stato attività, sopra sotto ecc-. */
+.activity-status-badge {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 4px 15px;
+    border-radius: 14px;
+    font-size: 0.8rem;
+}
+    .activity-status-badge.good {
+        background: rgba(87, 181, 121, 0.14);
+        color: #2f7f50;
+        border: 1px solid rgba(87, 181, 121, 0.22);
+    }
+    .activity-status-badge.warning {
+        background: rgba(231, 178, 79, 0.14);
+        color: #996420;
+        border: 1px solid rgba(231, 178, 79, 0.22);
+    }
+    .activity-status-badge.danger {
+        background: rgba(215, 112, 112, 0.14);
+        color: #a54e4e;
+        border: 1px solid rgba(215, 112, 112, 0.22);
+    }
+    .activity-status-badge.neutral {
+        background: rgba(154, 168, 160, 0.14);
+        color: #66776f;
+        border: var(--border);
+    }
+
+/* controlli (conto, target, colore)*/
+.activity-card-controls {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+/* input box per il singolo controllo */
+.mini-input-box {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+    .mini-input-box label {
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+    .mini-input-box input {
+        width: 100%;
+        padding: 12px 10px;
+        border-radius: 15px;
+        border: var(--border);
+        background: rgba(255, 255, 255, 0.56);
+        outline:none;
+    }
+        .mini-input-box input:focus {
+            border-color: var(--focus-border-color);
+            box-shadow: var(--focus-box-shadow);
+        }
+        .mini-input-box input:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+/* color input */
+.color-box input[type="color"] {
+    height: 46px;
+    padding: 4px;
+    cursor: pointer;
+}
+
+/* Footer della card con pulsanti o label finale */
+.activity-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Label finale mostrata nelle attività chiuse */
+.closed-activity-footer-label {
+    width: 100%;
+    text-align: center;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.46);
+    color: #66776f;
+    font-weight: 700;
+    font-size: 0.92rem;
+    border: var(--border);
+}
+
+/* Stato vuoto mostrato quando non ci sono attività o durante certi loading */
+.dashboard-empty-state {
+    width: 100%;
+    padding: 38px;
+    border-radius: 22px;
+    background: rgba(247, 249, 244, 0.86);
+    border: var(--border);
+    color: #66776f;
+    text-align: center;
+    box-shadow: 0 18px 40px rgba(88, 103, 93, 0.12);
+}
+
+/* Overlay scuro traslucido della modal */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(78, 90, 83, 0.28);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 100;
+}
+
+/* Card della modal di creazione/modifica attività */
+.modal-card {
+    width: 100%;
+    max-width: 720px;
+    border-radius: 28px;
+    background: rgba(247, 249, 244, 0.96);
+    border: var(--border);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 28px 60px rgba(88, 103, 93, 0.18);
+    padding: 28px;
+}
+
+/* Header della modal con titolo, testo e bottone chiusura */
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 22px;
+}
+
+    /* Titolo della modal */
+    .modal-header h2 {
+        margin: 0 0 8px;
+        color: #2f3a35;
+    }
+
+    /* Testo secondario della modal */
+    .modal-header p {
+        margin: 0;
+        color: #6f8278;
+        line-height: 1.5;
+    }
+
+/* Pulsante chiusura modal */
+.modal-close-btn {
+    border: none;
+    background: transparent;
+    color: #66776f;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+
+/* Stile specifico del color input nella modal */
+.input-group-color input[type="color"] {
+    width: 64px;
+    height: 48px;
+    padding: 4px;
+    cursor: pointer;
+}
+
+/* Riga che contiene color picker e valore esadecimale */
+.color-picker-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+/* Testo che mostra il valore del colore */
+.color-preview-value {
+    color: #66776f;
+    font-size: 0.95rem;
+}
+
+/* Barra finale delle azioni della modal */
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+/* Responsive per tablet e schermi medi */
+@media (max-width: 900px) {
+    .dashboard-topbar {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .dashboard-topbar-actions {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .activity-card {
+        min-height: fit-content;
+    }
+
+    .activity-card-controls {
+        grid-template-columns: 1fr;
+        min-height: fit-content;
+    }
+
+    .activity-card-footer {
+        margin-top: 10px;
+        flex-direction: row;
+        grid-template-rows: 1fr 1fr;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .profile-dropdown {
+        top: 200px;
+    }
+}
+
+/* Responsive per smartphone */
+@media (max-width: 560px) {
+    .dashboard-page {
+        padding: 18px;
+    }
+
+    .activities-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .activity-card {
+        width: 100%;
+        min-height: fit-content;
+    }
+
+    .activity-card-header {
+        flex-direction: column;
+    }
+
+    .activity-card-header-left {
+        width: 100%;
+    }
+
+    .activity-card-footer {
+        margin-top: 15px;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 5px;
+    }
+
+    .dashboard-topbar-actions {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    .profile-dropdown {
+        top: 200px;
+    }
+}
+
+@media (max-width: 496px) {
+    .profile-dropdown {
+        top: 255px;
+        right: 50%;
+        transform:translateX(50%);
+    }
+}
