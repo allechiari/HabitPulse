@@ -1,176 +1,139 @@
-﻿# HabitPulse
+# HabitPulse
 
-HabitPulse is a full-stack web application for tracking and managing daily habits.
+HabitPulse è una web app full stack per gestire abitudini e vizi giornalieri.
 
-This guide explains step by step how to run the project on a different computer after cloning it from GitHub.
+L'idea è semplice: ogni utente può registrarsi, fare login, creare le proprie attività, aggiornare i progressi della giornata e vedere un'analisi dell'andamento nel tempo.
 
----
+## Cosa fa
 
-# 🚀 Tech Stack
+- registrazione e login utente
+- dashboard con habit e vice
+- creazione, modifica, stop e ordinamento delle attività
+- salvataggio dei progressi giornalieri
+- pagina profilo per modificare dati e password
+- pagina analisi con filtri data e grafici
+- dati separati per ogni utente
 
-- Frontend: React (Vite)
-- Backend: Node.js + Express
-- Database: MongoDB Atlas
+## Tecnologie usate
 
----
+Frontend:
+- React
+- Vite
+- React Router
+- Recharts
 
-# 📦 Project Structure
+Backend:
+- Node.js
+- Express
+- MongoDB con Mongoose
+- bcryptjs per le password
+- dotenv per le variabili ambiente
+- cors
 
+Tool di sviluppo:
+- ESLint
+- Nodemon
+- Concurrently
+
+## Struttura del progetto
+
+```txt
 HabitPulse/
-- client/ → React frontend
-- server/ → Node.js backend
-- docs/ → documentation
+  client/   frontend React
+  server/   backend Node/Express
+```
 
----
+## Come avviare il progetto
 
-# ⚙️ 1. REQUIREMENTS
+Installa le dipendenze principali:
 
-Install the following:
-
-- Git
-- Node.js (version 20+ recommended)
-- npm
-- MongoDB Atlas account
-
----
-
-# ✅ 2. CHECK INSTALLATIONS
-
-Run:
-
-git --version
-node -v
-npm -v
-
----
-
-# 📥 3. CLONE PROJECT
-
-git clone https://github.com/YOUR_USERNAME/HabitPulse.git
-cd HabitPulse
-
----
-
-# 🔧 4. BACKEND SETUP
-
-cd server
+```bash
 npm install
+```
 
----
+Installa quelle del client:
 
-# 🔐 5. CREATE .env FILE
+```bash
+cd client
+npm install
+```
 
-Create file:
+Installa quelle del server:
 
-server/.env
+```bash
+cd ../server
+npm install
+```
 
-Add:
+Nel server serve un file `.env`:
 
+```env
 PORT=5000
 MONGO_URI=your_mongodb_connection_string
+```
 
-Example:
+La stringa MongoDB deve puntare al database `habitpulse`.
 
-PORT=5000
+Esempio:
+
+```env
 MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/habitpulse?retryWrites=true&w=majority
+```
 
----
+## Avvio
 
-# 🌐 6. CONFIGURE MONGODB ATLAS
+Per avviare tutto insieme dalla cartella principale:
 
-- Create cluster
-- Create database user
-- Add IP (0.0.0.0/0 for testing)
-- Copy connection string into .env
+```bash
+npm run dev
+```
 
----
+Oppure separato:
 
-# ▶️ 7. START BACKEND
-
+```bash
 cd server
 npm run dev
+```
 
----
-
-# 🎨 8. FRONTEND SETUP
-
-Open new terminal:
-
-cd HabitPulse/client
-npm install
-
----
-
-# ▶️ 9. START FRONTEND
-
-npm run dev
-
-Open browser:
-
-http://localhost:5173
-
----
-
-# 🔄 10. RUN FULL PROJECT
-
-Terminal 1:
-
-cd server
-npm run dev
-
-Terminal 2:
-
+```bash
 cd client
 npm run dev
+```
 
----
+Il frontend parte di solito su:
 
-# 🛑 11. STOP SERVERS
+```txt
+http://localhost:5173
+```
 
-Press:
+Il backend parte su:
 
-CTRL + C
-
----
-
-# 🛠️ 12. TROUBLESHOOTING
-
-If error:
-
-Delete dependencies:
-
-PowerShell:
-
-Remove-Item -Recurse -Force node_modules
-Remove-Item package-lock.json
-npm install
-
----
-
-# 📌 13. API ENDPOINTS
-
-POST /api/auth/register  
-POST /api/auth/login  
-
-Base URL:
-
+```txt
 http://localhost:5000
+```
 
----
+## Comandi utili
 
-# 📌 14. FINAL CHECK
+Nel client:
 
-Make sure:
+```bash
+npm run build
+npm run lint
+```
 
-- Node installed
-- Repo cloned
-- .env exists
-- MongoDB connected
-- Backend running
-- Frontend running
+Nel server:
 
----
+```bash
+npm run dev
+npm start
+```
 
-# 👨‍💻 Author
+## Note
+
+Il file `.env` non va caricato su GitHub.
+
+Il progetto usa MongoDB Atlas, quindi prima di avviare il backend bisogna avere una connection string valida.
+
+## Autore
 
 Alessandro Chiari
