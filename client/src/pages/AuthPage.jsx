@@ -94,9 +94,9 @@ function AuthPage() {
                 <div className="auth-visual">
                     <div className="auth-visual-content">
                         <span className="brand-tag">HabitPulse</span>
-                        <h1>*REMINDER* devo trovare una catchphrase</h1>
+                        <h1>Small steps. Lasting change.</h1>
                         <p>
-                            *REMINDER* devo trovare una descrizione accattivante
+                            Track your habits, keep your goals in sight, and turn everyday progress into meaningful results.
                         </p>
                     </div>
                 </div>
@@ -196,7 +196,6 @@ function AuthPage() {
                                 />
                             </div>
                                 { /* mostro in tempo reale quali elementi richiesti sono presenti nella password */}
-                                { /* *REMINDER* devo trovare un modo più carino per mostrarlo */}
                             <div className="password-rules">
                                 <p>Password must include:</p>
                                 <ul>

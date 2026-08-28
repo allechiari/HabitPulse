@@ -1,11 +1,7 @@
 const Habit = require("../models/Habit");
 const DailyProgress = require("../models/DailyProgress");
 
-const getUserIdFromRequest = (req) => {
-    return req.body?.userId || req.query?.userId;
-};
-
-// formato stabile per confrontare le date dentro le mappe
+// creo una chiave data in formato yyyy-mm-dd da usare nelle mappe
 const formatDateKey = (date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -14,22 +10,22 @@ const formatDateKey = (date) => {
     return `${year}-${month}-${day}`;
 };
 
-// inizio giorno del filtro selezionato
+// porto la data iniziale alle 00:00:00 del giorno scelto
 const parseStartDate = (dateValue) => {
     return new Date(`${dateValue}T00:00:00`);
 };
 
-// fine giorno del filtro selezionato
+// porto la data finale alle 23:59:59.999 del giorno scelto
 const parseEndDate = (dateValue) => {
     return new Date(`${dateValue}T23:59:59.999`);
 };
 
-// tengo un numero dentro un minimo e un massimo
+// limito un numero: se è troppo basso uso min, se è troppo alto uso max
 const clamp = (value, min, max) => {
     return Math.max(min, Math.min(value, max));
 };
 
-// creo la struttura di base di un giorno anche se non ho dati salvati
+// preparo un giorno vuoto, così i grafici hanno dati anche quando non è stato segnato nulla
 const createEmptyDay = (date) => {
     const dateKey = formatDateKey(date);
 
@@ -66,7 +62,7 @@ const createEmptyDay = (date) => {
     };
 };
 
-// controllo se una habit/vice era attiva in quel giorno
+// controllo se l'attività era già iniziata e non era ancora finita in quel giorno
 const isHabitActiveOnDay = (habit, dayStart, dayEnd) => {
     const habitStart = new Date(habit.startDate);
     habitStart.setHours(0, 0, 0, 0);
@@ -85,31 +81,35 @@ const isHabitActiveOnDay = (habit, dayStart, dayEnd) => {
     return habitEnd >= dayStart;
 };
 
-// calcolo percentuale giornaliera della singola attività, indipendentemente dall'unità di misura
-const getActivityPercent = (habitType, counter, target) => {
+// calcolo quanto counter ha raggiunto target, sempre su base 100
+// se counter supera target, la percentuale resta comunque 100
+const getActivityPercent = (counter, target) => {
     if (!target || target <= 0) {
         return 0;
     }
 
     const rawPercent = (counter / target) * 100;
-
-    if (habitType == "vice") {
-        return Math.round(clamp(rawPercent, 0, 200));
-    }
-
     return Math.round(clamp(rawPercent, 0, 100));
 };
 
-// score normalizzato: habit alta = bene, vizio basso = bene
-const getActivityScore = (habitType, percent) => {
-    if (habitType == "vice") {
-        return Math.round(100 - clamp(percent, 0, 100));
-    }
-
-    return Math.round(clamp(percent, 0, 100));
+// controllo se counter supera davvero target, usando i valori non bloccati dalla percentuale
+const isCounterOverTarget = (counter, target) => {
+    return target > 0 && counter > target;
 };
 
-// contenitore statistiche per una singola attività
+// trasformo la percentuale in score da 0 a 100
+// per gli habit uso la percentuale, per i vizi la inverto perché meno è meglio
+const getActivityScore = (habitType, percent) => {
+    const normalizedPercent = clamp(percent, 0, 100);
+
+    if (habitType == "vice") {
+        return Math.round(100 - normalizedPercent);
+    }
+
+    return Math.round(normalizedPercent);
+};
+
+// preparo il contenitore delle statistiche di una singola attività
 const createActivityStats = (habit) => {
     return {
         id: habit._id.toString(),
@@ -129,28 +129,21 @@ const createActivityStats = (habit) => {
     };
 };
 
-// media semplice usata per i riepiloghi finali
-const getAverage = (items, key, filterKey) => {
-    const filteredItems = filterKey
-        ? items.filter((item) => item[filterKey] > 0)
-        : items;
+// calcolo la media arrotondata di una proprietà dentro una lista
+const getAverage = (items, key) => {
+    if (!items.length) return 0;
 
-    if (!filteredItems.length) {
-        return 0;
-    }
-
-    const total = filteredItems.reduce((sum, item) => sum + item[key], 0);
-
-    return Math.round(total / filteredItems.length);
+    const total = items.reduce((sum, item) => sum + item[key], 0);
+    return Math.round(total / items.length);
 };
 
-// chiamata principale della pagina analisi
+// gestisco la chiamata che restituisce tutti i dati della pagina analisi
 const getAnalysisRange = async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
-        const userId = getUserIdFromRequest(req);
+        const userId = req.body?.userId || req.query?.userId;;
 
-        // controllo parametri obbligatori
+        // se manca un filtro obbligatorio, fermo subito la richiesta
         if (!startDate || !endDate || !userId) {
             return res.status(400).json({
                 message: "Start date, end date and user id are required."
@@ -160,21 +153,21 @@ const getAnalysisRange = async (req, res) => {
         const start = parseStartDate(startDate);
         const end = parseEndDate(endDate);
 
-        // controllo che le date siano valide
+        // controllo che le date ricevute possano essere convertite in date valide
         if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
             return res.status(400).json({
                 message: "Invalid date range."
             });
         }
 
-        // non posso analizzare un range invertito
+        // blocco i range dove la data iniziale viene dopo quella finale
         if (start > end) {
             return res.status(400).json({
                 message: "Start date cannot be after end date."
             });
         }
 
-        // prendo tutte le attività che esistono almeno in parte dentro al periodo richiesto
+        // prendo le attività dell'utente attive almeno un giorno dentro il periodo richiesto
         const habits = await Habit.find({
             user: userId,
             startDate: { $lte: end },
@@ -185,7 +178,7 @@ const getAnalysisRange = async (req, res) => {
         }).sort({ order: 1, createdAt: 1 });
         const habitIds = habits.map((habit) => habit._id);
 
-        // prendo i progress già salvati nel periodo
+        // prendo tutti i progress salvati per quelle attività dentro il periodo
         const progressEntries = await DailyProgress.find({
             habit: { $in: habitIds },
             date: {
@@ -196,7 +189,7 @@ const getAnalysisRange = async (req, res) => {
 
         const progressMap = new Map();
 
-        // creo una mappa veloce data-attività -> progress, così poi il ciclo giornaliero è più semplice
+        // salvo i progress in una mappa data-attività, così poi li trovo subito nel ciclo dei giorni
         for (const entry of progressEntries) {
             const habitId = entry.habit.toString();
             const dateKey = formatDateKey(entry.date);
@@ -208,7 +201,7 @@ const getAnalysisRange = async (req, res) => {
         const cursor = new Date(start);
         cursor.setHours(0, 0, 0, 0);
 
-        // ciclo tutti i giorni del periodo, anche quelli dove non è stato segnato nulla
+        // passo su ogni giorno del periodo, anche se quel giorno non ha progress salvati
         while (cursor <= end) {
             const dayStart = new Date(cursor);
             dayStart.setHours(0, 0, 0, 0);
@@ -223,7 +216,7 @@ const getAnalysisRange = async (req, res) => {
             let balanceScoreTotal = 0;
             let scoredActivities = 0;
 
-            // per ogni giorno controllo tutte le attività attive in quel giorno
+            // per il giorno corrente leggo solo le attività che erano attive
             for (const habit of habits) {
                 if (!isHabitActiveOnDay(habit, dayStart, dayEnd)) {
                     continue;
@@ -232,13 +225,15 @@ const getAnalysisRange = async (req, res) => {
                 const habitId = habit._id.toString();
                 const progress = progressMap.get(`${dayData.date}-${habitId}`);
                 const wasTracked = Boolean(progress);
-                // se non ho segnato nulla, il counter vale 0 ma il giorno resta visibile nei grafici
+                // se non esiste un progress, uso counter 0 e il target di default dell'attività
                 const counter = wasTracked ? Number(progress.counter) : 0;
                 const target = wasTracked ? Number(progress.target) : Number(habit.targetDefault);
-                const percent = getActivityPercent(habit.type, counter, target);
-                const score = getActivityScore(habit.type, percent);
+                const percent = getActivityPercent(counter, target);
+                // se l'attività non è tracciata, lo score resta 0 anche se è un vizio
+                const score = wasTracked ? getActivityScore(habit.type, percent) : 0;
+                const isOverTarget = wasTracked && isCounterOverTarget(counter, target);
 
-                // inizializzo le statistiche della singola attività solo la prima volta
+                // se è la prima volta che incontro questa attività, creo le sue statistiche
                 if (!activityMap.has(habitId)) {
                     activityMap.set(habitId, createActivityStats(habit));
                 }
@@ -256,7 +251,7 @@ const getAnalysisRange = async (req, res) => {
                 balanceScoreTotal += score;
                 scoredActivities += 1;
 
-                // distinguo tra dato segnato e giorno inattivo/non compilato
+                // aggiorno i contatori in base al fatto che il giorno sia stato compilato o no
                 if (wasTracked) {
                     dayData.trackedActivities += 1;
                     activityStats.daysTracked += 1;
@@ -265,7 +260,7 @@ const getAnalysisRange = async (req, res) => {
                     activityStats.inactiveDays += 1;
                 }
 
-                // buone abitudini: più la percentuale è alta più va bene
+                // se è un habit, aggiungo la percentuale alla media degli habit
                 if (habit.type == "habit") {
                     dayData.totalHabits += 1;
                     habitPercentTotal += percent;
@@ -279,7 +274,7 @@ const getAnalysisRange = async (req, res) => {
                     }
                 }
 
-                // vizi: più la percentuale è bassa più va bene
+                // se è un vizio, aggiungo percentuale e score alla media dei vizi
                 if (habit.type == "vice") {
                     dayData.totalVices += 1;
                     vicePercentTotal += percent;
@@ -289,12 +284,12 @@ const getAnalysisRange = async (req, res) => {
                         dayData.trackedVices += 1;
                     }
 
-                    if (percent > 100) {
+                    if (isOverTarget) {
                         dayData.vicesOverLimit += 1;
                     }
                 }
 
-                // dettaglio giornaliero della singola attività, utile se domani voglio aprire un drilldown
+                // salvo anche il dettaglio della singola attività per questo giorno
                 dayData.activityPercentages.push({
                     id: habitId,
                     title: habit.title,
@@ -308,7 +303,7 @@ const getAnalysisRange = async (req, res) => {
                 });
             }
 
-            // medie giornaliere già normalizzate in percentuale
+            // calcolo le medie del giorno usando i totali raccolti sopra
             dayData.habitPercent = dayData.totalHabits > 0
                 ? Math.round(habitPercentTotal / dayData.totalHabits)
                 : 0;
@@ -329,7 +324,7 @@ const getAnalysisRange = async (req, res) => {
             cursor.setDate(cursor.getDate() + 1);
         }
 
-        // statistiche finali per attività su tutto il periodo
+        // trasformo la mappa delle attività in lista e calcolo le medie finali del periodo
         const activityStats = Array.from(activityMap.values()).map((activity) => ({
             ...activity,
             averagePercent: activity.daysActive > 0
@@ -348,19 +343,19 @@ const getAnalysisRange = async (req, res) => {
         const totalTrackedActivities = dailyTrend.reduce((sum, day) => sum + day.trackedActivities, 0);
         const totalInactiveActivities = dailyTrend.reduce((sum, day) => sum + day.inactiveActivities, 0);
 
-        // giorno migliore in base allo score normalizzato
+        // scelgo il giorno con il balance score più alto
         const bestDay = activeDays.reduce((best, day) => {
             if (!best || day.balanceScore > best.balanceScore) return day;
             return best;
         }, null);
 
-        // giorno peggiore in base allo score normalizzato
+        // scelgo il giorno con il balance score più basso
         const worstDay = activeDays.reduce((worst, day) => {
             if (!worst || day.balanceScore < worst.balanceScore) return day;
             return worst;
         }, null);
 
-        // risposta finale pronta per i grafici del frontend
+        // restituisco riepiloghi, trend e classifiche già pronti per il frontend
         return res.status(200).json({
             startDate,
             endDate,

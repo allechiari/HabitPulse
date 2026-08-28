@@ -37,7 +37,8 @@ const habitSchema = new mongoose.Schema(
         targetDefault: {
             type: Number,
             required: true,
-            default: 1
+            default: 1,
+            min: 0
         },
         unit: {
             type: String,

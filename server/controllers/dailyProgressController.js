@@ -1,5 +1,6 @@
 const Habit = require("../models/Habit");
 const DailyProgress = require("../models/DailyProgress");
+const { parseNonNegativeNumber, parsePositiveNumber } = require("../utils/validation");
 
 const getUserIdFromRequest = (req) => {
     return req.body?.userId || req.query?.userId;
@@ -67,6 +68,7 @@ const updateProgressCounter = async (req, res) => {
     try {
         const { id } = req.params;
         const { counter, userId } = req.body;
+        const numericCounter = parseNonNegativeNumber(counter);
 
         if (!userId) {
             return res.status(400).json({
@@ -74,7 +76,7 @@ const updateProgressCounter = async (req, res) => {
             });
         }
 
-        if (counter === undefined || counter === null || Number(counter) < 0) {
+        if (numericCounter === null) {
             return res.status(400).json({
                 message: "Counter must be a number greater than or equal to 0."
             });
@@ -88,7 +90,7 @@ const updateProgressCounter = async (req, res) => {
             });
         }
 
-        progress.counter = Number(counter);
+        progress.counter = numericCounter;
         await progress.save();
 
         const updatedProgress = await DailyProgress.findById(id).populate("habit");
@@ -105,6 +107,7 @@ const updateProgressTarget = async (req, res) => {
     try {
         const { id } = req.params;
         const { target, userId } = req.body;
+        const numericTarget = parsePositiveNumber(target);
 
         if (!userId) {
             return res.status(400).json({
@@ -112,9 +115,9 @@ const updateProgressTarget = async (req, res) => {
             });
         }
 
-        if (target === undefined || target === null || Number(target) < 0) {
+        if (numericTarget === null) {
             return res.status(400).json({
-                message: "Target must be a number greater than or equal to 0."
+                message: "Target must be a number greater than 0."
             });
         }
 
@@ -126,12 +129,12 @@ const updateProgressTarget = async (req, res) => {
             });
         }
 
-        progress.target = Number(target);
+        progress.target = numericTarget;
         await progress.save();
 
         await Habit.findOneAndUpdate(
             { _id: progress.habit._id, user: userId },
-            { targetDefault: Number(target) }
+            { targetDefault: numericTarget }
         );
 
         const updatedProgress = await DailyProgress.findById(id).populate("habit");

@@ -237,7 +237,7 @@ function DashboardPage() {
     // modifico il target
     const handleTargetChange = async (habitId, progressId, value) => {
         const numericValue = Number(value);
-        if (numericValue < 0) return;
+        if (numericValue <= 0) return;
 
         try {
             const updatedProgress = await updateProgressTarget(progressId, numericValue, userId);
@@ -496,7 +496,7 @@ function DashboardPage() {
                                         {/* INPUT TARGET */}
                                         <div className="mini-input-box">
                                             <label>Target</label>
-                                            <input type="number" min="0" value={progressEntry ? progressEntry.target : habit.targetDefault} disabled={!progressEntry || habit.isStopped || !isEditing}
+                                            <input type="number" min="0.01" value={progressEntry ? progressEntry.target : habit.targetDefault} disabled={!progressEntry || habit.isStopped || !isEditing}
                                                 onChange={(event) =>
                                                     progressEntry &&
                                                     handleTargetChange(habit._id, progressEntry._id, event.target.value)
@@ -588,7 +588,7 @@ function DashboardPage() {
                                 </div>
                                 <div className="input-group">
                                     <label>Daily target</label>
-                                    <input type="number" min="1" name="targetDefault"
+                                    <input type="number" min="0.01" name="targetDefault"
                                         value={habitForm.targetDefault}
                                         onChange={handleFormChange}
                                         required

@@ -1,22 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-    Bar,
-    BarChart,
-    CartesianGrid,
-    Cell,
-    Legend,
-    Line,
-    LineChart,
-    ReferenceLine,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis
-} from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, Legend, Line, LineChart,
+        ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { getAnalysisData } from "../services/analysisService";
 
-// colori dei grafici, li tengo qui così se voglio cambiare palette lo faccio in un punto solo
+// chart colors in one place, so the palette is easy to change
 const chartColors = {
     habit: "#57b579",
     vice: "#d36f6f",
@@ -25,37 +13,55 @@ const chartColors = {
     inactive: "#d8c15f"
 };
 
-// colori usati nel grafico delle medie principali
+// colors used by the main avg chart
 const categoryColors = ["#57b579", "#d36f6f", "#6e9be6"];
 
-// converto una data nel formato yyyy-mm-dd richiesto dagli input type="date"
+// labels shown in the summary chart
+const categoryLabels = ["Habits %", "Vices %", "Tracking %"];
+
+// convert a date into the yyyy-mm-dd format required by input type="date"
 const toInputDate = (date) => {
     const localDate = new Date(date);
     localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
     return localDate.toISOString().split("T")[0];
 };
 
-// data di oggi per inizializzare il filtro finale
+// today's date for the default end filter
 const getTodayDate = () => {
     return toInputDate(new Date());
 };
 
-// di default apro la pagina con gli ultimi 7 giorni
+// default range: last 7 days
 const getDefaultStartDate = () => {
     const date = new Date();
     date.setDate(date.getDate() - 6);
     return toInputDate(date);
 };
 
-// formato più corto per non occupare troppo spazio sugli assi dei grafici
+// short date used in charts and best/worst rows
 const formatShortDate = (dateKey) => {
-    return new Date(`${dateKey}T00:00:00`).toLocaleDateString("it-IT", {
+    return new Date(`${dateKey}T00:00:00`).toLocaleDateString("en-US", {
         day: "2-digit",
         month: "short"
     });
 };
 
-// creo un gruppo vuoto, mi serve quando raggruppo i giorni in settimane o mesi
+// short month label used when the chart is grouped
+const formatMonthShort = (monthKey) => {
+    return new Date(`${monthKey}-01T00:00:00`).toLocaleDateString("en-US", {
+        month: "short"
+    });
+};
+
+// full month label used in the calendar section
+const formatMonthLabel = (monthKey) => {
+    return new Date(`${monthKey}-01T00:00:00`).toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric"
+    });
+};
+
+// create an empty group for week/month aggregations
 const createEmptyGroup = (label) => {
     return {
         label,
@@ -75,8 +81,10 @@ const createEmptyGroup = (label) => {
     };
 };
 
-// sommo un giorno dentro al suo gruppo, ma sempre usando percentuali e non unità miste
+// add one day to its group, using percentages instead of mixed units
 const addDayToGroup = (group, day) => {
+    // only days with active items are included in each avg
+
     if (day.totalHabits > 0) {
         group.habitPercentTotal += day.habitPercent;
         group.habitDays += 1;
@@ -97,8 +105,9 @@ const addDayToGroup = (group, day) => {
     group.inactiveActivities += day.inactiveActivities;
 };
 
-// dopo aver sommato i giorni calcolo le medie del gruppo
+// calculate final averages after all days have been added to the group
 const completeGroup = (group) => {
+    // keep the totals and add the calculated values used by the charts
     return {
         ...group,
         habitPercent: group.habitDays > 0
@@ -116,59 +125,63 @@ const completeGroup = (group) => {
     };
 };
 
-// preparo i dati per i grafici: giorno per giorno, oppure raggruppati per settimana/mese
+// build chart data day by day, or grouped by week/month
 const buildGroupedTrend = (dailyTrend, analysisMode) => {
     if (!dailyTrend || dailyTrend.length == 0) {
         return [];
     }
 
+    // daily modes keep each day and only format the label
     if (analysisMode == "week" || analysisMode == "custom") {
-        return dailyTrend.map((day) => ({
-            ...day,
-            label: formatShortDate(day.date)
-        }));
+        return dailyTrend.map((day) => ({ ...day, label: formatShortDate(day.date)}));
     }
 
     const groupedMap = new Map();
-
+    // year groups by month, while month groups by week inside the month
     for (const day of dailyTrend) {
         const date = new Date(`${day.date}T00:00:00`);
         const weekNumber = Math.ceil(date.getDate() / 7);
-        const key = analysisMode == "year"
-            ? day.monthKey
-            : `${day.monthKey}-${weekNumber}`;
-        const label = analysisMode == "year"
-            ? day.monthShort
-            : `${day.monthShort} W${weekNumber}`;
+        const key = analysisMode == "year" ? day.monthKey : `${day.monthKey}-${weekNumber}`; 
+        const monthShort = formatMonthShort(day.monthKey);
+        const label = analysisMode == "year" ? monthShort : `${monthShort} W${weekNumber}`;
 
+        // create the group if it does not exist yet, then update it
         const group = groupedMap.get(key) || createEmptyGroup(label);
         addDayToGroup(group, day);
         groupedMap.set(key, group);
     }
 
+    // return a list with final calculated percentages
     return Array.from(groupedMap.values()).map(completeGroup);
 };
 
-// divido i giorni per mese, soprattutto per rendere leggibile la vista annuale
+
 const buildMonthSections = (dailyTrend) => {
+    // Example input shape:
+    /*
+        dailyTrend = [
+            { date: "2026-07-30", monthKey: "2026-07", monthLabel: "July 2026" },
+            { date: "2026-08-01", monthKey: "2026-08", monthLabel: "August 2026" },
+            { date: "2026-08-02", monthKey: "2026-08", monthLabel: "August 2026" }
+        ];
+    */
+    // group days by monthKey and translate the month label for the UI
     const monthMap = new Map();
 
     for (const day of dailyTrend || []) {
         if (!monthMap.has(day.monthKey)) {
             monthMap.set(day.monthKey, {
                 monthKey: day.monthKey,
-                monthLabel: day.monthLabel,
+                monthLabel: formatMonthLabel(day.monthKey),
                 days: []
             });
         }
-
         monthMap.get(day.monthKey).days.push(day);
     }
-
     return Array.from(monthMap.values());
 };
 
-// scelgo il colore del quadratino calendario in base al risultato del giorno
+// choose the calendar cell color from the daily result
 const getHeatmapClass = (day) => {
     if (day.activeActivities == 0) return "empty";
     if (day.trackedActivities == 0) return "inactive";
@@ -177,13 +190,13 @@ const getHeatmapClass = (day) => {
     return "danger";
 };
 
-// testo piccolo per spiegare se una riga riguarda un vizio o una buona abitudine
+// small row label that explains if the item is a vice or a good habit
 const getActivityLabel = (activity) => {
     if (activity.type == "vice") {
-        return `vizio medio ${activity.averagePercent}%`;
+        return `Vice avg ${activity.averagePercent}%`;
     }
 
-    return `habit media ${activity.averagePercent}%`;
+    return `Habit avg ${activity.averagePercent}%`;
 };
 
 function AnalysisPage() {
@@ -191,17 +204,15 @@ function AnalysisPage() {
     const savedUser = JSON.parse(localStorage.getItem("habitpulseUser"));
     const userId = savedUser?.id || savedUser?._id;
 
-    // stato dei filtri e dei dati della pagina di analisi
+    // filters and page data state
     const [analysisMode, setAnalysisMode] = useState("week");
-    const [dateFilters, setDateFilters] = useState({
-        startDate: getDefaultStartDate(),
-        endDate: getTodayDate()
-    });
+    const [dateFilters, setDateFilters] = useState({startDate: getDefaultStartDate(), endDate: getTodayDate()});
     const [analysisData, setAnalysisData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [errorBanner, setErrorBanner] = useState("");
 
-    // dati finali da passare ai grafici principali
+    // final data passed to the main charts
+    // useMemo keeps the calculated result until analysis data or mode changes
     const chartData = useMemo(() => {
         if (!analysisData) {
             return [];
@@ -210,7 +221,7 @@ function AnalysisPage() {
         return buildGroupedTrend(analysisData.dailyTrend, analysisMode);
     }, [analysisData, analysisMode]);
 
-    // dati divisi per mese per il calendario/heatmap
+    // data split by month for the calendar heatmap
     const monthSections = useMemo(() => {
         if (!analysisData) {
             return [];
@@ -219,16 +230,19 @@ function AnalysisPage() {
         return buildMonthSections(analysisData.dailyTrend);
     }, [analysisData]);
 
-    // dati delle barre di riepilogo: habit, vizi e copertura del tracking
+    // summary bar data: habits, vices and tracking coverage
     const categoryData = useMemo(() => {
         if (!analysisData) {
             return [];
         }
 
-        return analysisData.categoryComparison;
+        return analysisData.categoryComparison.map((item, index) => ({
+            ...item,
+            name: categoryLabels[index] || item.name
+        }));
     }, [analysisData]);
 
-    // chiamo il backend passando le date selezionate
+    // load analysis data from the backend with the selected dates
     const loadAnalysisData = useCallback(async () => {
         try {
             if (!userId) {
@@ -248,12 +262,12 @@ function AnalysisPage() {
         }
     }, [dateFilters.startDate, dateFilters.endDate, navigate, userId]);
 
-    // ricarico i dati quando cambia il range delle date
+    // reload data when the selected date range changes
     useEffect(() => {
         loadAnalysisData();
     }, [loadAnalysisData]);
 
-    // cambio manuale delle date, quindi passo in modalità custom
+    // manual date changes switch the page to custom mode
     const handleDateChange = (event) => {
         const { name, value } = event.target;
 
@@ -264,7 +278,7 @@ function AnalysisPage() {
         }));
     };
 
-    // pulsanti rapidi settimana / mese / anno
+    // quick preset buttons: week / month / year
     const handlePresetRange = (mode) => {
         const end = new Date();
         const start = new Date();
@@ -274,12 +288,12 @@ function AnalysisPage() {
         }
 
         if (mode == "month") {
-            start.setDate(1);
+            start.setDate(1); // start at the first day of the current month
         }
 
         if (mode == "year") {
             start.setMonth(0);
-            start.setDate(1);
+            start.setDate(1); // start at the first day of January
         }
 
         setAnalysisMode(mode);
@@ -289,13 +303,13 @@ function AnalysisPage() {
         });
     };
 
-    // variabili comode per non sporcare troppo il jsx sotto
+    // handy variables to keep the JSX below cleaner
     const summary = analysisData?.summary;
     const hasActiveActivities = summary && summary.totalActiveActivities > 0;
 
     return (
         <div className="analysis-page">
-            {/* NAVBAR uguale alle altre pagine */}
+            {/* NAVBAR shared with the other pages */}
             <header className="dashboard-topbar">
                 <div>
                     <span className="brand-tag">HabitPulse</span>
@@ -317,17 +331,17 @@ function AnalysisPage() {
             </header>
 
             <main className="analysis-main">
-                {/* FILTRI DATE E PRESET */}
+                {/* DATE FILTERS AND PRESETS */}
                 <section className="analysis-filter-panel">
                     <div className="analysis-mode-buttons">
                         <button type="button" className={analysisMode == "week" ? "active" : ""} onClick={() => handlePresetRange("week")}>
-                            Settimana
+                            Week
                         </button>
                         <button type="button" className={analysisMode == "month" ? "active" : ""} onClick={() => handlePresetRange("month")}>
-                            Mese
+                            Month
                         </button>
                         <button type="button" className={analysisMode == "year" ? "active" : ""} onClick={() => handlePresetRange("year")}>
-                            Anno
+                            Year
                         </button>
                     </div>
 
@@ -343,7 +357,7 @@ function AnalysisPage() {
                         </div>
 
                         <button type="button" className="btn primary-btn" onClick={loadAnalysisData}>
-                            Analizza
+                            Analyze
                         </button>
                     </div>
                 </section>
@@ -352,7 +366,7 @@ function AnalysisPage() {
                     <div className="banner banner-error">{errorBanner}</div>
                 )}
 
-                {/* stati principali della pagina: loading, vuoto oppure grafici */}
+                {/* main page states: loading, empty or charts */}
                 {isLoading ? (
                     <div className="dashboard-empty-state">Loading analysis...</div>
                 ) : !hasActiveActivities ? (
@@ -361,18 +375,16 @@ function AnalysisPage() {
                     </div>
                 ) : (
                     <>
-                        {/* CARD DI RIEPILOGO */}
+                        {/* SUMMARY CARDS */}
                         <section className="analysis-summary-grid">
                             <div className="analysis-stat-card">
-                                <span>Habit average</span>
+                                <span>Habit avg</span>
                                 <strong>{summary.habitAveragePercent}%</strong>
-                                <p>Higher is better.</p>
                             </div>
 
                             <div className="analysis-stat-card">
-                                <span>Vice average</span>
+                                <span>Vice avg</span>
                                 <strong>{summary.viceAveragePercent}%</strong>
-                                <p>Lower is better.</p>
                             </div>
 
                             <div className="analysis-stat-card">
@@ -388,26 +400,25 @@ function AnalysisPage() {
                             </div>
                         </section>
 
-                        {/* GRAFICI PRINCIPALI */}
+                        {/* MAIN CHARTS */}
                         <section className="analysis-chart-grid">
                             <div className="analysis-chart-card wide">
                                 <div className="analysis-chart-header">
-                                    <h2>Percentuali giornaliere</h2>
-                                    <p>Habit alte buone, vizi bassi buoni.</p>
+                                    <h2>Daily percentages</h2>
                                 </div>
 
+                                {/* Line chart showing habits, vices and tracking over time. */}
                                 <div className="analysis-chart-box">
                                     <ResponsiveContainer width="100%" height={330}>
-                                        {/* linea principale: confronto solo percentuale, niente unità diverse mischiate */}
                                         <LineChart data={chartData}>
                                             <CartesianGrid strokeDasharray="3 3" />
                                             <XAxis dataKey="label" />
-                                            <YAxis domain={[0, 200]} />
+                                            <YAxis domain={[0, 100]} />
                                             <Tooltip />
                                             <Legend />
                                             <ReferenceLine y={100} stroke="#8b9a92" strokeDasharray="4 4" />
-                                            <Line type="monotone" dataKey="habitPercent" name="Buone abitudini %" stroke={chartColors.habit} strokeWidth={3} dot={false} />
-                                            <Line type="monotone" dataKey="vicePercent" name="Vizi %" stroke={chartColors.vice} strokeWidth={3} dot={false} />
+                                            <Line type="monotone" dataKey="habitPercent" name="Habits %" stroke={chartColors.habit} strokeWidth={3} dot={false} />
+                                            <Line type="monotone" dataKey="vicePercent" name="Vices %" stroke={chartColors.vice} strokeWidth={3} dot={false} />
                                             <Line type="monotone" dataKey="trackingCoverage" name="Tracking %" stroke={chartColors.tracking} strokeWidth={2} strokeDasharray="6 4" dot={false} />
                                         </LineChart>
                                     </ResponsiveContainer>
@@ -416,21 +427,21 @@ function AnalysisPage() {
 
                             <div className="analysis-chart-card">
                                 <div className="analysis-chart-header">
-                                    <h2>Copertura dati</h2>
-                                    <p>Mostra cosa hai segnato e cosa manca.</p>
+                                    <h2>Data coverage</h2>
                                 </div>
+
+                                {/* Stacked bar chart showing tracked and missing activity logs. */}
 
                                 <div className="analysis-chart-box">
                                     <ResponsiveContainer width="100%" height={300}>
-                                        {/* barre stacked: attività segnate vs non segnate */}
                                         <BarChart data={chartData}>
                                             <CartesianGrid strokeDasharray="3 3" />
                                             <XAxis dataKey="label" />
                                             <YAxis />
                                             <Tooltip />
                                             <Legend />
-                                            <Bar dataKey="trackedActivities" name="Segnate" stackId="tracking" fill={chartColors.tracking} radius={[8, 8, 0, 0]} />
-                                            <Bar dataKey="inactiveActivities" name="Non segnate" stackId="tracking" fill={chartColors.inactive} radius={[8, 8, 0, 0]} />
+                                            <Bar dataKey="trackedActivities" name="Tracked" stackId="tracking" fill={chartColors.tracking} radius={[8, 8, 0, 0]} />
+                                            <Bar dataKey="inactiveActivities" name="Not tracked" stackId="tracking" fill={chartColors.inactive} radius={[8, 8, 0, 0]} />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 </div>
@@ -438,19 +449,17 @@ function AnalysisPage() {
 
                             <div className="analysis-chart-card">
                                 <div className="analysis-chart-header">
-                                    <h2>Medie principali</h2>
-                                    <p>Solo percentuali, nessuna unita mista.</p>
+                                    <h2>Main avg</h2>
                                 </div>
-
+                                        {/* Bar chart with the three main percentages. */ }
                                 <div className="analysis-chart-box">
                                     <ResponsiveContainer width="100%" height={300}>
-                                        {/* riepilogo delle tre percentuali più importanti */}
                                         <BarChart data={categoryData}>
                                             <CartesianGrid strokeDasharray="3 3" />
                                             <XAxis dataKey="name" />
                                             <YAxis domain={[0, 100]} />
                                             <Tooltip />
-                                            <Bar dataKey="value" name="Percentuale" radius={[8, 8, 0, 0]}>
+                                            <Bar dataKey="value" name="Percentage" radius={[8, 8, 0, 0]}>
                                                 {categoryData.map((entry, index) => (
                                                     <Cell key={entry.name} fill={categoryColors[index] || chartColors.score} />
                                                 ))}
@@ -462,13 +471,13 @@ function AnalysisPage() {
 
                             <div className="analysis-chart-card wide">
                                 <div className="analysis-chart-header">
-                                    <h2>Score per attivita</h2>
-                                    <p>Per i vizi lo score sale quando la percentuale resta bassa.</p>
+                                    <h2>Activity scores</h2>
+                                    <p>For vices, the score rises when the percentage stays low.</p>
                                 </div>
-
+                                        {/* Bar chart comparing the score of each activity. */}
                                 <div className="analysis-chart-box">
                                     <ResponsiveContainer width="100%" height={330}>
-                                        {/* classifica normalizzata: tutto da 0 a 100 */}
+                                        {/* normalized ranking: everything goes from 0 to 100 */}
                                         <BarChart data={analysisData.topActivities} layout="vertical" margin={{ left: 20 }}>
                                             <CartesianGrid strokeDasharray="3 3" />
                                             <XAxis type="number" domain={[0, 100]} />
@@ -481,11 +490,11 @@ function AnalysisPage() {
                             </div>
                         </section>
 
-                        {/* CALENDARIO / HEATMAP DEL PERIODO */}
+                        {/* PERIOD CALENDAR / HEATMAP */}
                         <section className="analysis-chart-card wide">
                             <div className="analysis-chart-header">
-                                <h2>Calendario del periodo</h2>
-                                <p>Nel periodo annuale i giorni sono divisi per mese.</p>
+                                <h2>Period calendar</h2>
+                                <p>In yearly view, days are split by month.</p>
                             </div>
 
                             <div className="analysis-month-grid">
@@ -494,12 +503,12 @@ function AnalysisPage() {
                                         <h3>{section.monthLabel}</h3>
 
                                         <div className="analysis-month-days">
-                                            {/* ogni quadratino è un giorno, col tooltip posso vedere i dettagli */}
+                                            {/* each square is one day, with details in the tooltip */}
                                             {section.days.map((day) => (
                                                 <div
                                                     key={day.date}
                                                     className={`heatmap-cell ${getHeatmapClass(day)}`}
-                                                    title={`${day.date} | habit ${day.habitPercent}% | vizi ${day.vicePercent}% | tracking ${day.trackingCoverage}%`}
+                                                    title={`${day.date} | habits ${day.habitPercent}% | vices ${day.vicePercent}% | tracking ${day.trackingCoverage}%`}
                                                 >
                                                     <span>{day.dayOfMonth}</span>
                                                 </div>
@@ -510,12 +519,12 @@ function AnalysisPage() {
                             </div>
                         </section>
 
-                        {/* LISTE FINALI DI LETTURA RAPIDA */}
+                        {/* FINAL QUICK-READ LISTS */}
                         <section className="analysis-lower-grid">
                             <div className="analysis-chart-card">
                                 <div className="analysis-chart-header">
-                                    <h2>Da tenere d'occhio</h2>
-                                    <p>Score piu basso nel periodo.</p>
+                                    <h2>Watchlist</h2>
+                                    <p>Lowest score in the period.</p>
                                 </div>
 
                                 <div className="analysis-activity-list">
@@ -534,7 +543,7 @@ function AnalysisPage() {
                             <div className="analysis-chart-card">
                                 <div className="analysis-chart-header">
                                     <h2>Best and worst</h2>
-                                    <p>Basato sul balance score giornaliero.</p>
+                                    <p>Based on daily balance score.</p>
                                 </div>
 
                                 <div className="analysis-activity-list">

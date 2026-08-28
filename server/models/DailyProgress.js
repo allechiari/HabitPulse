@@ -14,12 +14,14 @@ const dailyProgressSchema = new mongoose.Schema(
         counter: {
             type: Number,
             required: true,
-            default: 0
+            default: 0,
+            min: 0
         },
         target: {
             type: Number,
             required: true,
-            default: 1
+            default: 1,
+            min: 0
         }
     },
     {

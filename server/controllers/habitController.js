@@ -1,4 +1,5 @@
 const Habit = require("../models/Habit");
+const { parsePositiveNumber, parseDate, isValidDateRange } = require("../utils/validation");
 
 const getUserIdFromRequest = (req) => {
     return req.body?.userId || req.query?.userId;
@@ -68,25 +69,41 @@ const createHabit = async (req, res) => {
             userId
         } = req.body;
 
-        if (!title || !type || !startDate || !targetDefault || !unit || !userId) {
+        if (!title || !type || !startDate || targetDefault === undefined || !unit || !userId) {
             return res.status(400).json({
                 message: "Missing required fields."
             });
+        }
+
+        const parsedStartDate = parseDate(startDate);
+        const parsedEndDate = endDate ? parseDate(endDate) : null;
+        const parsedTarget = parsePositiveNumber(targetDefault);
+
+        if (!parsedStartDate || (endDate && !parsedEndDate)) {
+            return res.status(400).json({ message: "Start date and end date must be valid dates." });
+        }
+
+        if (!isValidDateRange(parsedStartDate, parsedEndDate)) {
+            return res.status(400).json({ message: "Start date cannot be after end date." });
+        }
+
+        if (parsedTarget === null) {
+            return res.status(400).json({ message: "Target must be a number greater than 0." });
         }
 
         const activeLastHabit = await Habit.findOne({ user: userId, isStopped: false }).sort({ order: -1 });
         const nextOrder = activeLastHabit ? activeLastHabit.order + 1 : 1;
 
         const newHabit = new Habit({
-            title,
+            title: title.trim(),
             type,
-            description,
-            startDate,
-            endDate: endDate || null,
+            description: description ? String(description).trim() : "",
+            startDate: parsedStartDate,
+            endDate: parsedEndDate,
             color: color || "#4f7cff",
             order: nextOrder,
-            targetDefault: Number(targetDefault),
-            unit,
+            targetDefault: parsedTarget,
+            unit: unit.trim(),
             isStopped: false,
             user: userId
         });
@@ -130,6 +147,40 @@ const updateHabit = async (req, res) => {
             if (req.body[key] !== undefined) {
                 updates[key] = req.body[key];
             }
+        }
+
+        if (updates.targetDefault !== undefined) {
+            const parsedTarget = parsePositiveNumber(updates.targetDefault);
+            if (parsedTarget === null) {
+                return res.status(400).json({ message: "Target must be a number greater than 0." });
+            }
+            updates.targetDefault = parsedTarget;
+        }
+
+        if (updates.startDate !== undefined || updates.endDate !== undefined) {
+            const currentHabit = await Habit.findOne({ _id: id, user: userId });
+
+            if (!currentHabit) {
+                return res.status(404).json({ message: "Habit not found." });
+            }
+
+            const parsedStartDate = updates.startDate !== undefined
+                ? parseDate(updates.startDate)
+                : currentHabit.startDate;
+            const parsedEndDate = updates.endDate !== undefined
+                ? (updates.endDate ? parseDate(updates.endDate) : null)
+                : currentHabit.endDate;
+
+            if (!parsedStartDate || (updates.endDate && !parsedEndDate)) {
+                return res.status(400).json({ message: "Start date and end date must be valid dates." });
+            }
+
+            if (!isValidDateRange(parsedStartDate, parsedEndDate)) {
+                return res.status(400).json({ message: "Start date cannot be after end date." });
+            }
+
+            updates.startDate = parsedStartDate;
+            if (updates.endDate !== undefined) updates.endDate = parsedEndDate;
         }
 
         const updatedHabit = await Habit.findOneAndUpdate(

@@ -1,5 +1,5 @@
 /*
-Questo file serve a collegare il backend a MongoDB Atlas.
+Questo file serve a collegare il backend a mongo.
 */
 const mongoose = require("mongoose");
 
@@ -20,5 +20,6 @@ module.exports = connectDB;
 /*
     temp .env
     PORT=5000
+    0
     MONGO_URI=mongodb+srv://root:mhVbI8AwS69glkLE@habitpulse.wtp7bug.mongodb.net/habitpulse?appName=HabitPulse
 */
