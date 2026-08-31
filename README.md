@@ -12,7 +12,6 @@ L'idea è semplice: ogni utente può registrarsi, fare login, creare le proprie 
 - salvataggio dei progressi giornalieri
 - pagina profilo per modificare dati e password
 - pagina analisi con filtri data e grafici
-- dati separati per ogni utente
 
 ## Tecnologie usate
 
@@ -30,10 +29,6 @@ Backend:
 - dotenv per le variabili ambiente
 - cors
 
-Tool di sviluppo:
-- ESLint
-- Nodemon
-- Concurrently
 
 ## Struttura del progetto
 
@@ -112,27 +107,6 @@ Il backend parte su:
 http://localhost:5000
 ```
 
-## Comandi utili
-
-Nel client:
-
-```bash
-npm run build
-npm run lint
-```
-
-Nel server:
-
-```bash
-npm run dev
-npm start
-```
-
-## Note
-
-Il file `.env` non va caricato su GitHub.
-
-Il progetto usa MongoDB Atlas, quindi prima di avviare il backend bisogna avere una connection string valida.
 
 ## Autore
 
